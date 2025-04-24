@@ -21,52 +21,56 @@ def main(page: ft.Page):
             page.update()
 
     def converter_click(e):
-        try:
-            mapa_df = pd.read_excel(arquivo.value)
+     try:
+        mapa_df = pd.read_excel(arquivo.value)
 
-            # Substituir CNPJ vazio pelo CPF
-            mapa_df["Identificador"] = mapa_df["CNPJ"].fillna(mapa_df["CPF"])
+        # Tratar CNPJ inválido (0, "0", "", espaço, etc.)
+        mapa_df["CNPJ"] = mapa_df["CNPJ"].replace([0, "0", "0.0", "", " "], pd.NA)
+        mapa_df["Identificador"] = mapa_df["CNPJ"].fillna(mapa_df["CPF"])
 
-            resultado = mapa_df.groupby(['Identificador', 'Plano Interno']).agg({
-                'Nome': 'first',
-                'Fatura': lambda x: ', '.join(map(str, x.unique())),
-                'Valor': 'sum'
-            }).reset_index()
+        resultado = mapa_df.groupby(['Identificador', 'Plano Interno']).agg({
+            'Nome': 'first',
+            'Fatura': lambda x: ', '.join(
+                map(lambda v: str(int(v)) if pd.notna(v) else '', x.unique())
+            ),
+            'Valor': 'sum'
+        }).reset_index()
 
-            resultado = resultado[['Nome', 'Identificador', 'Plano Interno', 'Fatura', 'Valor']]
-            resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
+        resultado = resultado[['Nome', 'Identificador', 'Plano Interno', 'Fatura', 'Valor']]
+        resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
 
-            # Formatar CNPJ ou CPF com pontuação
-            def format_identificador(val):
-                val_str = str(int(val)).zfill(14)
-                if len(val_str.strip("0")) <= 11:
-                    # CPF
-                    cpf = val_str[-11:]
-                    return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
-                else:
-                    # CNPJ
-                    cnpj = val_str
-                    return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
-            
-            resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(format_identificador)
+        # Formatar CNPJ ou CPF com pontuação
+        def format_identificador(val):
+            val_str = str(int(val)).zfill(14)
+            if len(val_str.strip("0")) <= 11:
+                # CPF
+                cpf = val_str[-11:]
+                return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+            else:
+                # CNPJ
+                cnpj = val_str
+                return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+        
+        resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(format_identificador)
 
-            resultado['Valor'] = resultado['Valor'].apply(
-                lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            )
+        resultado['Valor'] = resultado['Valor'].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
 
-            pasta_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            nome_arquivo = f"relatorio_por_cnpj_{timestamp}.xlsx"
-            caminho_completo = os.path.join(pasta_downloads, nome_arquivo)
+        pasta_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_arquivo = f"relatorio_por_cnpj_{timestamp}.xlsx"
+        caminho_completo = os.path.join(pasta_downloads, nome_arquivo)
 
-            resultado.to_excel(caminho_completo, index=False)
+        resultado.to_excel(caminho_completo, index=False)
 
-            status_text.value = f"✅ Arquivo salvo em: {nome_arquivo}"
-            status_text.color = ft.colors.GREEN
-        except Exception as ex:
+        status_text.value = f"✅ Arquivo salvo em: {nome_arquivo}"
+        status_text.color = ft.colors.GREEN
+     except Exception as ex:
             status_text.value = f"❌ Erro: {str(ex)}"
             status_text.color = ft.colors.RED
-        page.update()
+    page.update()
+
 
 
     file_picker = ft.FilePicker(on_result=pick_file_result)
