@@ -1,0 +1,4 @@
+([('conversor',
+   '/Users/pmgu3/Desktop/python/ '
+   'Secao_administrativa/Divisao_notas_fiscais/dist/conversor',
+   'EXECUTABLE')],)
