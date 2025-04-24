@@ -24,13 +24,35 @@ def main(page: ft.Page):
         try:
             mapa_df = pd.read_excel(arquivo.value)
 
-            resultado = mapa_df.groupby(['CNPJ', 'Plano Interno']).agg({
+            # Substituir CNPJ vazio pelo CPF
+            mapa_df["Identificador"] = mapa_df["CNPJ"].fillna(mapa_df["CPF"])
+
+            resultado = mapa_df.groupby(['Identificador', 'Plano Interno']).agg({
                 'Nome': 'first',
                 'Fatura': lambda x: ', '.join(map(str, x.unique())),
                 'Valor': 'sum'
             }).reset_index()
 
-            resultado = resultado[['Nome', 'CNPJ', 'Plano Interno', 'Fatura', 'Valor']]
+            resultado = resultado[['Nome', 'Identificador', 'Plano Interno', 'Fatura', 'Valor']]
+            resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
+
+            # Formatar CNPJ ou CPF com pontuação
+            def format_identificador(val):
+                val_str = str(int(val)).zfill(14)
+                if len(val_str.strip("0")) <= 11:
+                    # CPF
+                    cpf = val_str[-11:]
+                    return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+                else:
+                    # CNPJ
+                    cnpj = val_str
+                    return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+            
+            resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(format_identificador)
+
+            resultado['Valor'] = resultado['Valor'].apply(
+                lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            )
 
             pasta_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -45,6 +67,7 @@ def main(page: ft.Page):
             status_text.value = f"❌ Erro: {str(ex)}"
             status_text.color = ft.colors.RED
         page.update()
+
 
     file_picker = ft.FilePicker(on_result=pick_file_result)
     page.overlay.append(file_picker)
