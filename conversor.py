@@ -47,14 +47,17 @@ def main(page: ft.Page):
             resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
 
             def format_identificador(val):
-                val_str = str(val).zfill(14)
-                val_str = ''.join(filter(str.isdigit, val_str))
-                if len(val_str) == 11:
-                    return f"{val_str[:3]}.{val_str[3:6]}.{val_str[6:9]}-{val_str[9:]}"
-                elif len(val_str) == 14:
-                    return f"{val_str[:2]}.{val_str[2:5]}.{val_str[5:8]}/{val_str[8:12]}-{val_str[12:]}"
+                val_str = str(int(val)).zfill(14)  
+                stripped = str(int(val))           
+
+                if len(stripped) <= 11:
+                    # É CPF
+                    cpf = val_str[-11:]  
+                    return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
                 else:
-                    return val_str
+                    # É CNPJ
+                    cnpj = val_str
+                    return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
 
             resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(format_identificador)
 
@@ -111,13 +114,13 @@ def main(page: ft.Page):
                     on_click=converter_click,
                 )
             ], alignment=ft.MainAxisAlignment.CENTER, spacing=20),
-
+            
             ft.Container(height=10),
             status_text,
             ft.Divider(thickness=1),
             ft.Container(
                 content=ft.Text(
-                    "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por CNPJ e plano Interno, "
+                    "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por OCS/PSA e os seus plano Interno, "
                     "facilitando a solicitação de notas fiscais.\n"
                     "Uso exclusivo da Seção Administrativa da Base Administrativa do COPESP.",
                     size=12,
@@ -150,6 +153,5 @@ def main(page: ft.Page):
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         spacing=20)
     )
-
 ft.app(target=main)
 
