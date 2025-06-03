@@ -1,67 +1,39 @@
 import customtkinter as ctk
-from tkinter import filedialog, messagebox
 import pandas as pd
+from tkinter import filedialog
 import os
 from datetime import datetime
 
-ctk.set_appearance_mode("System")
+# Configuração de aparência
+ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-class ConversorApp(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("Conversor de Mapas - PMGU/GNA_COPESP")
-        self.geometry("600x500")
-        self.resizable(False, False)
+# Janela principal
+app = ctk.CTk()
+app.title("Conversor de Mapas - PMGU/GNA_COPESP")
+app.geometry("700x600")
+app.resizable(False, False)
 
-        self.arquivo = ""
-        self.pasta_destino = os.path.join(os.path.expanduser("~"), "Downloads")
+arquivo_mapa = ""
+pasta_destino = os.path.join(os.path.expanduser("~"), "Downloads")
 
-        self.create_widgets()
+# Funções
+def selecionar_arquivo():
+    global arquivo_mapa
+    file_path = filedialog.askopenfilename(filetypes=[("Arquivos Excel", "*.xlsx *.xls")])
+    if file_path:
+        arquivo_mapa = file_path
+        status.configure(text=f"📄 Arquivo selecionado: {os.path.basename(file_path)}", text_color="#1E3A8A", font=("Arial", 12, "bold"))
 
-    def create_widgets(self):
-        # Título
-        ctk.CTkLabel(self, text="Conversor de Execução Orçamentária", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(10, 5))
-        
-        # Logo (substitua por um logo válido se quiser)
-        try:
-            from PIL import Image
-            logo_image = ctk.CTkImage(Image.open("logo_pmgu.png"), size=(80, 80))
-            ctk.CTkLabel(self, image=logo_image, text="").pack(pady=5)
-        except:
-            pass
+def selecionar_pasta():
+    global pasta_destino
+    folder = filedialog.askdirectory()
+    if folder:
+        pasta_destino = folder
+        status.configure(text=f"📁 Pasta selecionada: {pasta_destino}", text_color="#1E3A8A", font=("Arial", 12, "bold"))
 
-        # Status
-        self.status_label = ctk.CTkLabel(self, text="📂 Selecione um mapa para gerar o relatório.", text_color="blue")
-        self.status_label.pack(pady=10)
-
-        # Botões
-        ctk.CTkButton(self, text="Anexar Mapa", command=self.selecionar_arquivo).pack(pady=5)
-        ctk.CTkButton(self, text="Selecionar Pasta", command=self.selecionar_pasta).pack(pady=5)
-        ctk.CTkButton(self, text="Converter", command=self.converter_mapa).pack(pady=10)
-
-        # Rodapé
-        rodape = (
-            "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por OCS/PSA e seus planos internos, "
-            "facilitando a solicitação de notas fiscais.\nUso exclusivo da Seção Administrativa da Base Administrativa do COPESP."
-        )
-        ctk.CTkLabel(self, text=rodape, wraplength=550, font=ctk.CTkFont(size=12)).pack(pady=15)
-
-        ctk.CTkLabel(self, text="Desenvolvido por Cb Pacífico", font=ctk.CTkFont(size=10, slant="italic")).pack()
-
-    def selecionar_arquivo(self):
-        filepath = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.xls")])
-        if filepath:
-            self.arquivo = filepath
-            self.status_label.configure(text=f"📄 Arquivo selecionado: {os.path.basename(filepath)}", text_color="blue")
-
-    def selecionar_pasta(self):
-        pasta = filedialog.askdirectory()
-        if pasta:
-            self.pasta_destino = pasta
-            self.status_label.configure(text=f"📂 Pasta selecionada: {pasta}", text_color="blue")
-
-    def format_identificador(self, val):
+def formatar_identificador(val):
+    try:
         val_str = str(int(val)).zfill(14)
         stripped = str(int(val))
         if len(stripped) <= 11:
@@ -70,39 +42,75 @@ class ConversorApp(ctk.CTk):
         else:
             cnpj = val_str
             return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+    except:
+        return val
 
-    def converter_mapa(self):
-        try:
-            if not self.arquivo:
-                raise Exception("Nenhum arquivo selecionado.")
+def converter():
+    try:
+        mapa_df = pd.read_excel(arquivo_mapa, dtype={"CNPJ": str, "CPF": str, "Fatura": str})
+        mapa_df["CNPJ"] = mapa_df["CNPJ"].replace([None, "nan", "0", "0.0", "", " "], pd.NA)
+        mapa_df["Identificador"] = mapa_df["CNPJ"].fillna(mapa_df["CPF"])
 
-            mapa_df = pd.read_excel(self.arquivo, dtype={"CNPJ": str, "CPF": str, "Fatura": str})
-            mapa_df["CNPJ"] = mapa_df["CNPJ"].replace([None, "nan", "0", "0.0", "", " "], pd.NA)
-            mapa_df["Identificador"] = mapa_df["CNPJ"].fillna(mapa_df["CPF"])
+        resultado = mapa_df.groupby(['Identificador', 'Plano Interno']).agg({
+            'Nome': 'first',
+            'Fatura': lambda x: ', '.join(
+                map(lambda v: str(v).split(".")[0] if str(v).replace(".", "").isdigit() else str(v), x.unique())
+            ),
+            'Valor': 'sum'
+        }).reset_index()
 
-            resultado = mapa_df.groupby(['Identificador', 'Plano Interno']).agg({
-                'Nome': 'first',
-                'Fatura': lambda x: ', '.join(
-                    map(lambda v: str(v).split(".")[0] if str(v).replace(".", "").isdigit() else str(v), x.unique())
-                ),
-                'Valor': 'sum'
-            }).reset_index()
+        resultado = resultado[['Nome', 'Identificador', 'Plano Interno', 'Fatura', 'Valor']]
+        resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
 
-            resultado = resultado[['Nome', 'Identificador', 'Plano Interno', 'Fatura', 'Valor']]
-            resultado.rename(columns={'Identificador': 'CNPJ/CPF'}, inplace=True)
-            resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(self.format_identificador)
-            resultado['Valor'] = resultado['Valor'].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        resultado['CNPJ/CPF'] = resultado['CNPJ/CPF'].apply(formatar_identificador)
+        resultado['Valor'] = resultado['Valor'].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            nome_arquivo = f"relatorio_por_cnpj_{timestamp}.xlsx"
-            caminho_completo = os.path.join(self.pasta_destino, nome_arquivo)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_arquivo = f"relatorio_por_cnpj_{timestamp}.xlsx"
+        caminho_completo = os.path.join(pasta_destino, nome_arquivo)
 
-            resultado.to_excel(caminho_completo, index=False)
-            self.status_label.configure(text=f"✅ Arquivo salvo em: {nome_arquivo}", text_color="green")
+        resultado.to_excel(caminho_completo, index=False)
+        status.configure(text=f"✅ Arquivo salvo: {nome_arquivo}", text_color="green", font=("Arial", 12, "bold"))
+    except Exception as e:
+        status.configure(text=f"❌ Erro: {str(e)}", text_color="red", font=("Arial", 12, "bold"))
 
-        except Exception as e:
-            self.status_label.configure(text=f"❌ Erro: {str(e)}", text_color="red")
+# Frame principal
+frame = ctk.CTkFrame(app, fg_color="black")
+frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-if __name__ == "__main__":
-    app = ConversorApp()
-    app.mainloop()
+# Título
+ctk.CTkLabel(frame, text="Conversor de Execução Orçamentária", font=("Arial", 20, "bold"), text_color="white").pack(pady=(20, 10))
+ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(0, 20))
+
+# Botão principal
+ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height=45, width=200, font=("Arial", 14)).pack(pady=(0, 40))
+
+# Linha de botões
+buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
+buttons_frame.pack()
+
+ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=180, font=("Arial", 13)).pack(side="left", padx=20)
+ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=180, font=("Arial", 13)).pack(side="right", padx=20)
+
+# Status
+status = ctk.CTkLabel(frame, text="📂 Selecione um mapa para gerar o relatório.", text_color="#1E3A8A", font=("Arial", 12, "bold"))
+status.pack(pady=(30, 20))
+
+# Linha separadora acima do texto explicativo
+ctk.CTkFrame(frame, height=1, fg_color="gray").pack(fill="x", padx=10, pady=(0, 15))
+
+# Texto explicativo
+texto_info = (
+    "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por OCS/PSA e\n"
+    "os seus plano Interno, facilitando a solicitação de notas fiscais.\n"
+    "Uso exclusivo da Seção Administrativa da Base Administrativa do COPESP."
+)
+ctk.CTkLabel(frame, text=texto_info, font=("Arial", 11), justify="center", text_color="white").pack(pady=(0, 10))
+
+# Rodapé à esquerda
+ctk.CTkLabel(app, text="Desenvolvido por  Cb Pacífico", font=("Arial", 10, "italic"), text_color="gray").pack(anchor="w", padx=20, pady=(0, 10))
+
+# Loop principal
+app.mainloop()
