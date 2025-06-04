@@ -72,17 +72,18 @@ def converter():
         caminho_completo = os.path.join(pasta_destino, nome_arquivo)
 
         resultado.to_excel(caminho_completo, index=False)
-        status.configure(text=f"✅ Arquivo salvo: {nome_arquivo}", text_color="green", font=("Arial", 12, "bold"))
+        status.configure(text=f"✅ Arquivo salvo: {nome_arquivo}", text_color="green", font=("Arial", 14, "bold"))
     except Exception as e:
-        status.configure(text=f"❌ Erro: {str(e)}", text_color="red", font=("Arial", 12, "bold"))
+        status.configure(text=f"❌ Erro: {str(e)}", text_color="red", font=("Arial", 14, "bold"))
 
 # Frame principal
 frame = ctk.CTkFrame(app, fg_color="black")
 frame.pack(padx=20, pady=20, fill="both", expand=True)
 
 # Título
-ctk.CTkLabel(frame, text="Conversor de Execução Orçamentária", font=("Arial", 20, "bold"), text_color="white").pack(pady=(20, 10))
-ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(0, 20))
+ctk.CTkLabel(frame, text="Conversor de Execução Orçamentária", font=("Arial", 25, "bold"), text_color="white").pack(pady=(20, 10))
+ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(10, 50))
+
 
 # Botão principal
 ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height=45, width=200, font=("Arial", 14)).pack(pady=(0, 40))
@@ -91,26 +92,22 @@ ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height
 buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
 buttons_frame.pack()
 
-ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=180, font=("Arial", 13)).pack(side="left", padx=20)
-ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=180, font=("Arial", 13)).pack(side="right", padx=20)
+ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=180, font=("Arial", 14)).pack(side="left", padx=20)
+ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=180, font=("Arial", 14)).pack(side="right", padx=20)
 
 # Status
-status = ctk.CTkLabel(frame, text="📂 Selecione um mapa para gerar o relatório.", text_color="#1E3A8A", font=("Arial", 12, "bold"))
+status = ctk.CTkLabel(frame, text="📂 Selecione um mapa para gerar o relatório.", text_color="#5166A0", font=("Arial", 14, "bold"))
 status.pack(pady=(30, 20))
 
-# Linha separadora acima do texto explicativo
-ctk.CTkFrame(frame, height=1, fg_color="gray").pack(fill="x", padx=10, pady=(0, 15))
-
 # Texto explicativo
+ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(0, 50))
 texto_info = (
-    "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por OCS/PSA e\n"
-    "os seus plano Interno, facilitando a solicitação de notas fiscais.\n"
-    "Uso exclusivo da Seção Administrativa da Base Administrativa do COPESP."
+    "Este sistema transforma mapas disponibilizados pelo SIPEO/DPGO em relatórios organizados por OCS/PSA e os seus plano Interno, facilitando a solicitação de notas fiscais.\n"
+    "O seu uso é exclusivo da Seção Administrativa da Base Administrativa do COPESP."
 )
 ctk.CTkLabel(frame, text=texto_info, font=("Arial", 11), justify="center", text_color="white").pack(pady=(0, 10))
 
-# Rodapé à esquerda
+# desenvolvido por
 ctk.CTkLabel(app, text="Desenvolvido por  Cb Pacífico", font=("Arial", 10, "italic"), text_color="gray").pack(anchor="w", padx=20, pady=(0, 10))
 
-# Loop principal
 app.mainloop()
