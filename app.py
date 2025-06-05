@@ -4,14 +4,14 @@ from tkinter import filedialog
 import os
 from datetime import datetime
 
-# Configuração de aparência
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# Janela principal
+
 app = ctk.CTk()
 app.title("Conversor de Mapas - PMGU/GNA_COPESP")
-app.geometry("800x600")
+app.geometry("750x600")
 app.resizable(True,True)
 
 arquivo_mapa = ""
@@ -117,32 +117,30 @@ def converter():
         progress.stop()            
         progress.pack_forget()    
 
-# Frame principal
-frame = ctk.CTkFrame(app, fg_color="black")
+# Frame 
+frame = ctk.CTkFrame(app, fg_color="#111418")
 frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-# Barra de progresso (inicialmente oculta)
+# Barra de progresso 
 progress = ctk.CTkProgressBar(frame, mode="indeterminate")
 progress.pack(fill="x", padx=30, pady=(10, 10))
 progress.set(0)
 progress.pack_forget()
 
-# Título
 ctk.CTkLabel(frame, text="Conversor de Execução Orçamentária", font=("Arial", 22, "bold"), text_color="white").pack(pady=(20, 10))
 ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(10, 50))
 
-# Botão principal
-ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height=45, width=200, font=("Arial", 14)).pack(pady=(0, 40))
+ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height=45, width=180, corner_radius=8, font=("Arial", 14, "bold")).pack(pady=(0, 40))
 
 buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
 buttons_frame.pack()
 
-ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=180, font=("Arial", 14)).pack(side="left", padx=20)
-ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=180, font=("Arial", 14)).pack(side="right", padx=20)
+ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=150,corner_radius=8, font=("Arial", 14,"bold")).pack(side="left", padx=50)
+ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=150, corner_radius=8, font=("Arial", 14,"bold")).pack(side="right", padx=50)
 
 # Status
-status = ctk.CTkLabel(frame, text="📂 Selecione um mapa para gerar o relatório.", text_color="#5166A0", font=("Arial", 14, "bold"))
-status.pack(pady=(30, 20))
+status = ctk.CTkLabel(frame, text= "📂 Selecione um mapa para gerar o relatório.", text_color="#1e7bc5", font=("Calibri", 14, "bold"))
+status.pack(pady=(50, 20))
 
 ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(0, 20))
 
@@ -155,7 +153,7 @@ texto_info = (
     "Destinado exclusivamente à Seção Administrativa da Base Administrativa do COPESP, facilita o controle e a solicitação de notas fiscais."
 )
 
-label_texto = ctk.CTkLabel(frame, text=texto_info, font=("Arial", 11), justify="left", text_color="white", anchor="w")
+label_texto = ctk.CTkLabel(frame, text=texto_info, font=("Arial", 10), justify="left", text_color="white", anchor="w")
 label_texto.pack(fill="both", expand=True, padx=30, pady=(0, 10))
 
 ctk.CTkLabel(app, text="Desenvolvido por  Cb Pacífico", font=("Arial", 10, "italic"), text_color="gray").pack(anchor="w", padx=20, pady=(0, 10))
