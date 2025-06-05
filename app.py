@@ -4,21 +4,18 @@ from tkinter import filedialog
 import os
 from datetime import datetime
 
-
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
 
 app = ctk.CTk()
 app.title("Conversor de Mapas - PMGU/GNA_COPESP")
 app.geometry("750x600")
-app.resizable(True,True)
+app.resizable(True, True)
 
 arquivo_mapa = ""
 arquivo_inex = None
 pasta_destino = os.path.join(os.path.expanduser("~"), "Downloads")
 
-# Funções
 def selecionar_arquivo():
     global arquivo_mapa
     file_path = filedialog.askopenfilename(filetypes=[("Arquivos Excel", "*.xlsx *.xls")])
@@ -101,9 +98,16 @@ def converter():
         if arquivo_inex:
             inex_df = pd.read_excel(arquivo_inex, dtype={"CNPJ": str})
             inex_df["CNPJ"] = inex_df["CNPJ"].astype(str).str.zfill(14)
+            inex_df["ITEM"] = inex_df.get("ITEM", "")
             resultado["CNPJ_Base"] = resultado["CNPJ/CPF"].str.replace(r'\D', '', regex=True).str.zfill(14)
-            resultado = resultado.merge(inex_df[['CNPJ', 'INEX']], how='left', left_on="CNPJ_Base", right_on="CNPJ")
-            resultado.drop(columns=["CNPJ_Base", "CNPJ"], inplace=True)
+
+            merge_df = resultado.merge(inex_df[['CNPJ', 'ITEM', 'INEX']], how='left', left_on="CNPJ_Base", right_on="CNPJ")
+            merge_df.drop(columns=["CNPJ_Base", "CNPJ"], inplace=True)
+
+            # Reordenar colunas: ITEM e INEX primeiro
+            colunas = list(merge_df.columns)
+            colunas_reordenadas = ['ITEM', 'INEX'] + [col for col in colunas if col not in ['ITEM', 'INEX']]
+            resultado = merge_df[colunas_reordenadas]
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nome_arquivo = f"relatorio_por_cnpj_{timestamp}.xlsx"
@@ -117,11 +121,10 @@ def converter():
         progress.stop()            
         progress.pack_forget()    
 
-# Frame 
+# Layout
 frame = ctk.CTkFrame(app, fg_color="#111418")
 frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-# Barra de progresso 
 progress = ctk.CTkProgressBar(frame, mode="indeterminate")
 progress.pack(fill="x", padx=30, pady=(10, 10))
 progress.set(0)
@@ -135,16 +138,14 @@ ctk.CTkButton(frame, text="📂 Anexar Mapa", command=selecionar_arquivo, height
 buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
 buttons_frame.pack()
 
-ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=150,corner_radius=8, font=("Arial", 14,"bold")).pack(side="left", padx=50)
-ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=150, corner_radius=8, font=("Arial", 14,"bold")).pack(side="right", padx=50)
+ctk.CTkButton(buttons_frame, text="📁 Selecionar Pasta", command=selecionar_pasta, height=40, width=150, corner_radius=8, font=("Arial", 14, "bold")).pack(side="left", padx=50)
+ctk.CTkButton(buttons_frame, text="📤 Converter", command=converter, height=40, width=150, corner_radius=8, font=("Arial", 14, "bold")).pack(side="right", padx=50)
 
-# Status
-status = ctk.CTkLabel(frame, text= "📂 Selecione um mapa para gerar o relatório.", text_color="#1e7bc5", font=("Calibri", 14, "bold"))
+status = ctk.CTkLabel(frame, text="📂 Selecione um mapa para gerar o relatório.", text_color="#1e7bc5", font=("Calibri", 14, "bold"))
 status.pack(pady=(50, 20))
 
 ctk.CTkFrame(frame, height=2, fg_color="gray").pack(fill="x", padx=30, pady=(0, 20))
 
-# Texto
 texto_info = (
     "Este sistema importa mapas orçamentários fornecidos pelo SIPEO/DPGO, processando e organizando os dados por CNPJ/CPF e planos internos.\n"
     "Permite a inclusão opcional de dados complementares do arquivo INEX para enriquecer o relatório final.\n"
@@ -153,12 +154,8 @@ texto_info = (
     "Destinado exclusivamente à Seção Administrativa da Base Administrativa do COPESP, facilita o controle e a solicitação de notas fiscais."
 )
 
-label_texto = ctk.CTkLabel(frame, text=texto_info, font=("Arial", 10), justify="left", text_color="white", anchor="w")
-label_texto.pack(fill="both", expand=True, padx=30, pady=(0, 10))
-
+ctk.CTkLabel(frame, text=texto_info, font=("Arial", 10), justify="left", text_color="white", anchor="w").pack(fill="both", expand=True, padx=30, pady=(0, 10))
 ctk.CTkLabel(app, text="Desenvolvido por  Cb Pacífico", font=("Arial", 10, "italic"), text_color="gray").pack(anchor="w", padx=20, pady=(0, 10))
 
-
 app.after(100, popup_incluir_inex)
-
 app.mainloop()
